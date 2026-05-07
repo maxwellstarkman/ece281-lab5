@@ -50,6 +50,7 @@ begin
                 w_add_sub <= unsigned('0' & i_A) + unsigned('0' & i_B);
             when "001" => -- subtract
                 w_add_sub <= unsigned('0' & i_A) - unsigned('0' & i_B);
+                w_result  <= std_logic_vector(w_add_sub(7 downto 0));
             when others =>
                 w_add_sub <= (others => '0');
         end case;
