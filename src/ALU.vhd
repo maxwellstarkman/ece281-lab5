@@ -42,15 +42,13 @@ end ALU;
 architecture Behavioral of ALU is
     signal w_add_sub : unsigned(8 downto 0) := (others => '0');
 begin
-
     process(i_A, i_B, i_op)
-        variable v_result : std_logic_vector(7 downto 0);
+        variable v_res : std_logic_vector(7 downto 0);
     begin
         case i_op is
             when "000" => -- Add
                 w_add_sub <= unsigned('0' & i_A) + unsigned('0' & i_B);
             when "001" => -- Subtract
-                -- Using '1' in the MSB handles the Carry flag as "No Borrow" 
                 w_add_sub <= unsigned('1' & i_A) - unsigned('0' & i_B);
             when "010" => -- And
                 w_add_sub <= '0' & unsigned(i_A and i_B);
@@ -60,27 +58,25 @@ begin
                 w_add_sub <= (others => '0');
         end case;
 
-        v_result := std_logic_vector(w_add_sub(7 downto 0));
-        o_result <= v_result;
-
+        v_res := std_logic_vector(w_add_sub(7 downto 0));
+        o_result <= v_res;
         
-        o_flags(3) <= v_result(7);
-        
-        if v_result = "00000000" then
+        -- NZCV Flags 
+        o_flags(3) <= v_res(7); -- Negative
+        if v_res = "00000000" then
             o_flags(2) <= '1';
         else
             o_flags(2) <= '0';
         end if;
         
-        o_flags(1) <= w_add_sub(8);
+        o_flags(1) <= w_add_sub(8); -- Carry
         
-        if (i_op = "000" and (i_A(7) = i_B(7)) and (v_result(7) /= i_A(7))) or
-           (i_op = "001" and (i_A(7) /= i_B(7)) and (v_result(7) /= i_A(7))) then
+        -- overflow
+        if (i_op = "000" and (i_A(7) = i_B(7)) and (v_res(7) /= i_A(7))) or
+           (i_op = "001" and (i_A(7) /= i_B(7)) and (v_res(7) /= i_A(7))) then
             o_flags(0) <= '1';
         else
             o_flags(0) <= '0';
         end if;
-        
     end process;
-
 end Behavioral;
