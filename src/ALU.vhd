@@ -40,38 +40,41 @@ entity ALU is
 end ALU;
 
 architecture Behavioral of ALU is
-    signal w_add_sub : unsigned(8 downto 0) := (others => '0');
+
 begin
     process(i_A, i_B, i_op)
-        variable v_res : std_logic_vector(7 downto 0);
+        variable v_math : unsigned(8 downto 0);
+        variable v_res  : std_logic_vector(7 downto 0);
+        
     begin
         case i_op is
             when "000" => -- Add
-                w_add_sub <= unsigned('0' & i_A) + unsigned('0' & i_B);
+                v_math := unsigned('0' & i_A) + unsigned('0' & i_B);
             when "001" => -- Subtract
-                w_add_sub <= unsigned('1' & i_A) - unsigned('0' & i_B);
+                v_math := unsigned('1' & i_A) - unsigned('0' & i_B);
             when "010" => -- And
-                w_add_sub <= '0' & unsigned(i_A and i_B);
+                v_math := '0' & unsigned(i_A and i_B);
             when "011" => -- Or
-                w_add_sub <= '0' & unsigned(i_A or i_B);
+                v_math := '0' & unsigned(i_A or i_B);
             when others =>
-                w_add_sub <= (others => '0');
+                v_math := (others => '0');
         end case;
 
-        v_res := std_logic_vector(w_add_sub(7 downto 0));
+        v_res := std_logic_vector(v_math(7 downto 0));
         o_result <= v_res;
-        
-        -- NZCV Flags 
+
+
         o_flags(3) <= v_res(7); -- Negative
-        if v_res = "00000000" then
+        
+        if v_res = "00000000" then -- Zero
             o_flags(2) <= '1';
         else
             o_flags(2) <= '0';
         end if;
         
-        o_flags(1) <= w_add_sub(8); -- Carry
+        o_flags(1) <= v_math(8); -- Carry
         
-        -- overflow
+        -- Overflow
         if (i_op = "000" and (i_A(7) = i_B(7)) and (v_res(7) /= i_A(7))) or
            (i_op = "001" and (i_A(7) /= i_B(7)) and (v_res(7) /= i_A(7))) then
             o_flags(0) <= '1';
@@ -79,4 +82,5 @@ begin
             o_flags(0) <= '0';
         end if;
     end process;
+    
 end Behavioral;
