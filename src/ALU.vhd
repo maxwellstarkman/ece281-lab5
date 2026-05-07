@@ -41,40 +41,46 @@ end ALU;
 
 architecture Behavioral of ALU is
     signal w_add_sub : unsigned(8 downto 0) := (others => '0');
-    signal w_result  : std_logic_vector(7 downto 0) := (others => '0');
 begin
+
     process(i_A, i_B, i_op)
+        variable v_result : std_logic_vector(7 downto 0);
     begin
         case i_op is
-            when "000" => -- add
+            when "000" => -- Add
                 w_add_sub <= unsigned('0' & i_A) + unsigned('0' & i_B);
-            when "001" => -- subtract
-                w_add_sub <= unsigned('0' & i_A) - unsigned('0' & i_B);
-                w_result  <= std_logic_vector(w_add_sub(7 downto 0));
+            when "001" => -- Subtract
+                -- Using '1' in the MSB handles the Carry flag as "No Borrow" 
+                w_add_sub <= unsigned('1' & i_A) - unsigned('0' & i_B);
+            when "010" => -- And
+                w_add_sub <= '0' & unsigned(i_A and i_B);
+            when "011" => -- Or
+                w_add_sub <= '0' & unsigned(i_A or i_B);
             when others =>
                 w_add_sub <= (others => '0');
         end case;
+
+        v_result := std_logic_vector(w_add_sub(7 downto 0));
+        o_result <= v_result;
+
+        
+        o_flags(3) <= v_result(7);
+        
+        if v_result = "00000000" then
+            o_flags(2) <= '1';
+        else
+            o_flags(2) <= '0';
+        end if;
+        
+        o_flags(1) <= w_add_sub(8);
+        
+        if (i_op = "000" and (i_A(7) = i_B(7)) and (v_result(7) /= i_A(7))) or
+           (i_op = "001" and (i_A(7) /= i_B(7)) and (v_result(7) /= i_A(7))) then
+            o_flags(0) <= '1';
+        else
+            o_flags(0) <= '0';
+        end if;
+        
     end process;
-
-    process(i_A, i_B, i_op, w_add_sub)
-    begin
-        case i_op is
-            when "000" | "001" => w_result <= std_logic_vector(w_add_sub(7 downto 0));
-            when "010" =>         w_result <= i_A and i_B;
-            when "011" =>         w_result <= i_A or i_B;
-            when others =>        w_result <= (others => '0');
-        end case;
-    end process;
-
-    o_result <= w_result;
-
-    -- NZCV
-    o_flags(3) <= w_result(7); -- negative
-    o_flags(2) <= '1' when w_result = "00000000" else '0'; -- zero
-    o_flags(1) <= w_add_sub(8); -- carry
-    -- overflow
-    o_flags(0) <= '1' when (i_op = "000" and (i_A(7) = i_B(7)) and (w_result(7) /= i_A(7))) or
-                           (i_op = "001" and (i_A(7) /= i_B(7)) and (w_result(7) /= i_A(7)))
-                  else '0';
 
 end Behavioral;
